@@ -1,8 +1,10 @@
 # Background
 Due to the Adorne RF switches being discontinued by Legrand and wanting to be able to expand my lighting system in the future, I decided to reverse engineer the RF portion.
 
+
 # Hardware
 The RF portion of the system uses the TI CC1110 chip.
+
 
 # RF Info
 As per the FCC test reports
@@ -31,9 +33,16 @@ Channel seperation is also listed in the report which can be used to calculate t
 |5|924.873 MHz|
 
 
-# Process
-Recorded an RF transmission using gqrx and an RTL-SDR.  The transmission was decoded using inspecturm.  Several more transmissions were captured from different switches to verify decoding was correct.  Used RfCat and a TI CC1111 dongle to capture all transmissions from the lighting system.  Tried to send a light on/off command using RfCat on only 924.873 MHz, but this did not work to control the switches.
+# Reversing
+## Manual Decode
+Recorded an RF transmission using gqrx and an RTL-SDR.  The transmission was decoded using inspecturm.  Several more transmissions were captured from different switches to verify decoding was correct.
 
+![Alt text](images/manual_decode.png)
+Manual decode of preamble and sync
+
+Tried to send a light on/off command using RfCat on only 924.873 MHz, but this did not work to control the switches.
+
+## Channel Sequence
 As per SP-adorneGuideFo-AD.pdf
 
 
@@ -52,6 +61,16 @@ I had to remove the scale so channel 5 would be visible.  With scales turned on
 This is the pattern that seems to repeat.  There are some other patterns that are a little different, but that could be from interference.  Channel 1 and channel 5 transmitting at the same time seems weird.
 
 Tried transmitting channel sequence 2, 5, 4, 3, 5 and 2, 1, 4, 3, 1 with RfCat.  Both sequences work for turning switches on/off.
+
+After trying different lengths of the channel sequence to see if on/off can be triggered with less than the full sequence, I noticed that the sequence 2, 5, 4, 3, 5 works consistently but 2, 1, 4, 3, 1 does not.
+
+TestChannelSequence.py tries various channel sequences to toggle the switch and checks the data from the LCM to see if the switch is on or off.
+
+While testing TestChannelSequence.py I noticed some channel sequences would cause the LCM to change the switch state but the actual switch did not change state.  Will need to add a voltage sensor on the output of a switch or use a light sensor to monitor a light controlled by the switch.
+
+## Identify Frames
+Used RfCat and a TI CC1111 dongle to capture all transmissions from the lighting system to identify other frames.
+
 
 # Message Format
 ## Full Message
@@ -107,8 +126,9 @@ CRC of the message, computed from byte 9 to byte 2
 ### ~CRC
 Inverted CRC
 
+
 # To do
 - [ ] Check CC1110 manual again to see if there is a way to transmit on channel 1 and channel 5 simultaneously.
 - [ ] Decode some of the different patterns to verify if they are valid or caused by interference.
 - [x] Try transmitting channel sequence 2, 5, 4, 3, 5 and 2, 1, 4, 3, 1 with RfCat.
-
+- [ ] Capture data for adding a swtich to system with RfCat
